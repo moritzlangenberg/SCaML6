@@ -132,7 +132,7 @@ class Layer:
         self.activation = activation
         self.last_input = None	# placeholder, can be used in backpropagation
         self.last_output = None # placeholder, can be used in backpropagation
-	self.last_nodes = None  # placeholder, can be used in backpropagation
+        self.last_nodes = None  # placeholder, can be used in backpropagation
 
     def initializeWeights(self):
         """
@@ -152,6 +152,10 @@ class Layer:
         :return: output of the layer
         :rtype: np.array
         """
+        self.last_input = x
+        z = self. biases + np.dot(self.weights, x)
+        self.last_output = self.activation(z)
+        return self.last_output
         pass
 
     def backprop(self, error):
@@ -191,7 +195,10 @@ class BasicNeuralNetwork():
         :return: output of the network
         :rtype: np.array
         """
-        return []
+        y = self.layers[0].inference(x)
+        for layerIterator in range(1, len(self.layers)):
+            y = self.layers[layerIterator].inference(y)
+        return y
 
     def train(self, train_dataset, eval_dataset=None, monitor_ce_train=True, monitor_accuracy_train=True,
               monitor_ce_eval=True, monitor_accuracy_eval=True, monitor_plot='monitor.png'):
