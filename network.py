@@ -132,16 +132,17 @@ class Layer:
         self.activation = activation
         self.last_input = None	# placeholder, can be used in backpropagation
         self.last_output = None # placeholder, can be used in backpropagation
-        self.last_nodes = None  # placeholder, can be used in backpropagation
+        self.last_nodes = np.zeros(shape=[self.no], dtype=np.float32)  # placeholder, can be used in backpropagation
 
     def initializeWeights(self):
         """
         Task 2d
-        Initialized the weight matrix of the layer. Weights should be initialized to something other than 0.
+        Initialized the weight matrix of the layer.
+        Weights should be initialized to something other than 0.
         You can search the literature for possible initialization methods.
         :return: None
         """
-        self.weights = np.random.rand(self.ni, self.np)
+        self.weights = np.random.rand(self.ni, self.no)
         self.biases = np.random.rand(self.no)
         pass
 
@@ -160,7 +161,7 @@ class Layer:
             for j in range(0, self.ni):
                 z[i] += self.weights[j][i] * x[j]
             z[i] += self.biases[i]
-            self.last_nodes[i] = z[i]
+        self.last_nodes = z
         self.last_output = self.activation(z, False)
         return self.last_output
         pass
@@ -208,7 +209,7 @@ class Layer:
 
 class BasicNeuralNetwork():
     def __init__(self, layer_sizes=5, num_input=4, num_output=3, num_epoch=50, learning_rate=0.1,
-                 mini_batch_size=8):
+                 mini_batch_size=8, number_of_hiddenlayers=4):
         self.layers = []
         self.ls = layer_sizes
         self.ni = num_input
@@ -216,6 +217,7 @@ class BasicNeuralNetwork():
         self.lr = learning_rate
         self.num_epoch = num_epoch
         self.mbs = mini_batch_size
+        self.nhl = number_of_hiddenlayers
 
         self.constructNetwork()
 
@@ -227,6 +229,7 @@ class BasicNeuralNetwork():
         :return: output of the network
         :rtype: np.array
         """
+        #y = np.zeros(shape=self.ls) --> accuracy = 33,3%
         y = self.layers[0].inference(x)
         for layerIterator in range(1, len(self.layers)):
             y = self.layers[layerIterator].inference(y)
@@ -323,7 +326,7 @@ class BasicNeuralNetwork():
                 error = e
         pass
 
-    def constructNetwork(self, number_of_hiddenlayers):
+    def constructNetwork(self):
         """
         Task 2d
         uses self.ls self.ni and self.no to construct a list of layers.
@@ -334,8 +337,8 @@ class BasicNeuralNetwork():
 
         input_layer = Layer(self.ni, self.ls, sigmoid)
         self.layers.append(input_layer)
-        for i in range(0, number_of_hiddenlayers):
-            self.layers.append(Layer(self.ni, self.ls, sigmoid))
+        for i in range(0, self.nhl):
+            self.layers.append(Layer(self.ls, self.ls, sigmoid))
         output_layer = Layer(self.ls, self.no, softmax)
         self.layers.append(output_layer)
 
