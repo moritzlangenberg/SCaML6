@@ -95,6 +95,10 @@ def sigmoid(x, deriv=False):
     :param deriv:
     :return:
     '''
+    if deriv:
+        return sigmoid(x, False) * (1 - sigmoid(x, False))
+    else:
+        return 0.5 * (1 + tanh(0.5 * x))
     pass
 
 
@@ -107,6 +111,12 @@ def softmax(x, deriv=False):
     :param deriv:
     :return:
     '''
+    if deriv:
+        return softmax(x, True)
+    else:
+        exps = [np.exp(i) for i in x]
+        sumOfExps = np.sum(exps)
+        return [np.divide(i, sumOfExps) for i in exps]
     pass
 
 
