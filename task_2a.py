@@ -13,10 +13,3 @@ if acc > 0.5:
 else:
     print('There seem to be errors with your computation of the network outputs')
 exit()
-
-def sig(x):
-    #sigmoid function
-    try:
-        return (1/(1+exp(-x)))
-    except TypeError:
-        print("passed argument is not a number")
