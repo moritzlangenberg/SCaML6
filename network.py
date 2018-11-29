@@ -157,11 +157,10 @@ class Layer:
         self.last_input = x
         z = np.zeros(shape=[self.no], dtype=np.float32)
         for i in range(0, self.no):
-            z = 0
             for j in range(0, self.ni):
-                z += self.weights[j][i] * x[j]
-            z += self.biases[j]
-            self.last_nodes[i] = z
+                z[i] += self.weights[j][i] * x[j]
+            z[i] += self.biases[i]
+            self.last_nodes[i] = z[i]
         self.last_output = self.activation(z, False)
         return self.last_output
         pass
@@ -286,24 +285,42 @@ class BasicNeuralNetwork():
         """
         for (o, k) in dataset.get_all_obs_class():
             error = self.forward(o)
-            error[k] = 1 - error[k]
+            error[k] = 1 - 2 * error[k]
             for layer in self.layers:
                 (e, w, b) = layer.backprop(error)
                 layer.weights -= self.lr * w
                 layer.weights -= self.lr * b
                 error = e
-
-
-
         pass
 
     def mini_batch_SGD(self, dataset):
         """
         Task 2d
-        This function trains the network using mini batches. Meaning the weights updates are accumulated and applied after each mini batch.
+        This function trains the network using mini batches.
+        Meaning the weights updates are accumulated and applied after each mini batch.
         :param dataset:
         :return: None
         """
+        """
+            def get_mini_batches(self, batch_size, shuffle=False):
+        if shuffle:
+            random.shuffle(self.indices)
+
+        batches = [(self.obs[self.indices[n:n + batch_size]],
+                    self.classes[self.indices[n:n + batch_size]])
+                   for n in range(0, self.num_obs, batch_size)]
+        return batches
+        """
+        for (o, k) in dataset.get_mini_batches(self.mbs):
+            error = np.zeros(self.no)
+            for b in range(0, self.mbs):
+                error += self.forward(o[b])
+                error[k] += 1 - 2 * error[k]
+            for layer in self.layers:
+                (e, w, b) = layer.backprop(error)
+                layer.weights -= self.lr * w
+                layer.weights -= self.lr * b
+                error = e
         pass
 
     def constructNetwork(self, number_of_hiddenlayers):
