@@ -1,4 +1,5 @@
 from network import *
+import math
 
 print("\nLoading Iris test data ")
 testDataPath = "irisTestData.txt"
@@ -13,3 +14,9 @@ else:
     print('There seem to be errors with your computation of the network outputs')
 exit()
 
+def sig(x):
+    #sigmoid function
+    try:
+        return (1/(1+exp(-x)))
+    except TypeError:
+        print("passed argument is not a number")
