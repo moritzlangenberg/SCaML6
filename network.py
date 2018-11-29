@@ -112,7 +112,7 @@ def softmax(x, deriv=False):
     :return:
     '''
     if deriv:
-        return softmax(x, True)
+        return sigmoid(x, True)
     else:
         exps = [np.exp(i) for i in x]
         sumOfExps = np.sum(exps)
@@ -141,6 +141,8 @@ class Layer:
         You can search the literature for possible initialization methods.
         :return: None
         """
+        self.weights = np.random.rand(self.ni, self.np)
+        self.biases = np.random.rand(self.no)
         pass
 
     def inference(self, x):
@@ -195,7 +197,7 @@ class Layer:
                 * self.activation(self.last_nodes[i], True) \
                 * 1
         #Error signal for prev Layer E/y(l-1)
-        errorSignal = np.zeros(shape=[self.], dtype=np.float32)
+        errorSignal = np.zeros(shape=[self.ni], dtype=np.float32)
         for i in range(0, self.ni):
             for k in range(0, self.no):
                 errorSignal[k] += error[k] \
@@ -206,7 +208,7 @@ class Layer:
 
 
 class BasicNeuralNetwork():
-    def __init__(self, layer_sizes=[5], num_input=4, num_output=3, num_epoch=50, learning_rate=0.1,
+    def __init__(self, layer_sizes=5, num_input=4, num_output=3, num_epoch=50, learning_rate=0.1,
                  mini_batch_size=8):
         self.layers = []
         self.ls = layer_sizes
@@ -277,10 +279,22 @@ class BasicNeuralNetwork():
     def online_SGD(self, dataset):
         """
         Task 2d
-        This function trains the network in an online fashion. Meaning the weights are updated after each observation.
+        This function trains the network in an online fashion.
+        Meaning the weights are updated after each observation.
         :param dataset:
         :return: None
         """
+        for (o, k) in dataset.get_all_obs_class():
+            error = self.forward(o)
+            error[k] = 1 - error[k]
+            for layer in self.layers:
+                (e, w, b) = layer.backprop(error)
+                layer.weights -= self.lr * w
+                layer.weights -= self.lr * b
+                error = e
+
+
+
         pass
 
     def mini_batch_SGD(self, dataset):
@@ -292,12 +306,24 @@ class BasicNeuralNetwork():
         """
         pass
 
-    def constructNetwork(self):
+    def constructNetwork(self, number_of_hiddenlayers):
         """
         Task 2d
-        uses self.ls self.ni and self.no to construct a list of layers. The last layer should use sigmoid_softmax as an activation function. any preceeding layers should use sigmoid.
+        uses self.ls self.ni and self.no to construct a list of layers.
+        The last layer should use sigmoid_softmax as an activation function.
+        any preceeding layers should use sigmoid.
         :return: None
         """
+
+        input_layer = Layer(self.ni, self.ls, sigmoid)
+        self.layers.append(input_layer)
+        for i in range(0, number_of_hiddenlayers):
+            self.layers.append(Layer(self.ni, self.ls, sigmoid))
+        output_layer = Layer(self.ls, self.no, softmax)
+        self.layers.append(output_layer)
+
+        for layer in self.layers:
+            layer.initializeWeights()
         pass
 
     def ce(self, dataset):
