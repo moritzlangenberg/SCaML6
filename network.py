@@ -153,16 +153,24 @@ class Layer:
         :rtype: np.array
         """
         self.last_input = x
-        z = self. biases + np.dot(self.weights, x)
-        self.last_output = self.activation(z)
+        z = np.zeros(shape=[self.no], dtype=np.float32)
+        for i in range(0, self.no):
+            z = 0
+            for j in range(0, self.ni):
+                z += self.weights[j][i] * x[j]
+            z += self.biases[j]
+            self.last_nodes[i] = z
+        self.last_output = self.activation(z, False)
         return self.last_output
         pass
 
     def backprop(self, error):
         """
         Task 2c
-        This function applied the backpropagation of the error signal. The Layer receives the error signal from the following
-        layer or the network. You need to calculate the error signal for the next layer by backpropagating thru this layer.
+        This function applied the backpropagation of the error signal.
+        The Layer receives the error signal from the following
+        layer or the network. You need to calculate the error signal
+        for the next layer by backpropagating thru this layer.
          You also need to compute the gradients for the weights and bias.
         :param error:
         :return: error signal for the preceeding layer
@@ -170,8 +178,31 @@ class Layer:
         :return: gradients for the bias
         :rtype: np.array
         """
+        #Gradient for weights
+        grad_weights = np.zeros(shape=[self.ni, self.no], dtype=np.float32)
+        for i in range(0, self.no):
+            for j in range(0, self.ni):
+                grad_weights[i][j] = \
+                    error[i] \
+                    * self.activation(self.last_nodes[i], True) \
+                    * self.last_input[j]
 
-        return [], [], []
+        #Gradient for biases
+        grad_biases = np.zeros(shape=[self.no], dtype=np.float32)
+        for i in range(0, self.no):
+            grad_biases[i] = \
+                error[i] \
+                * self.activation(self.last_nodes[i], True) \
+                * 1
+        #Error signal for prev Layer E/y(l-1)
+        errorSignal = np.zeros(shape=[self.], dtype=np.float32)
+        for i in range(0, self.ni):
+            for k in range(0, self.no):
+                errorSignal[k] += error[k] \
+                                  * self.activation(self.last_nodes, True) \
+                                  * self.weights[k][i]
+
+        return errorSignal, grad_weights, grad_biases
 
 
 class BasicNeuralNetwork():
