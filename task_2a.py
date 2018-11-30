@@ -4,7 +4,13 @@ print("\nLoading Iris test data ")
 testDataPath = "irisTestData.txt"
 testDataset = IrisDataset(testDataPath)
 
+print("\nLoading Iris Training data ")
+trainDataPath = "irisTrainData.txt"
+trainDataset = IrisDataset(trainDataPath)
+
 net = BasicNeuralNetwork()
+
+net.train(trainDataset, eval_dataset=testDataset)
 #print(len(net.layers))
 net.load('./task_2a.save')
 acc = net.accuracy(testDataset)

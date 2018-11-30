@@ -70,17 +70,22 @@ class IrisDataset(Dataset):
         self.num_obs = data.shape[0]
         self.num_classes = 3
 
+# Helpers
+def square(list):
+    return np.array([i ** 2 for i in list])
+
 
 # Activations
 def tanh(x, deriv=False):
     '''
 	d/dx tanh(x) = 1 - tanh^2(x)
-	during backpropagation when we need to go though the derivative we have already computed tanh(x),
+	during backpropagation when we need to go though
+	the derivative we have already computed tanh(x),
 	therefore we pass tanh(x) to the function which reduces the gradient to:
 	1 - tanh(x)
     '''
     if deriv:
-        return 1.0 - np.tanh(x)
+        return 1.0 - np.power(np.tanh(x), 2)
     else:
         return np.tanh(x)
 
@@ -100,13 +105,14 @@ def sigmoid(x, deriv=False):
     if deriv:
         return sigmoid(x, False) * (1 - sigmoid(x, False))
     else:
-        return 0.5 * (1 + np.tanh(0.5 * x))
+        return 0.5 * (1 + tanh(0.5 * x))
 
 
 def softmax(x, deriv=False):
     '''
     Task 2a
-    This function is the sigmoid function with a softmax applied. This will be used in the last layer of the network
+    This function is the sigmoid function with a softmax applied.
+    This will be used in the last layer of the network
     The derivate will be the same as of sigmoid(x)
     :param x:
     :param deriv:
@@ -130,9 +136,9 @@ class Layer:
         self.initializeWeights()
 
         self.activation = activation
-        self.last_input = np.zeros(shape=[self.ni], dtype=np.float32)  # placeholder, can be used in backpropagation
-        self.last_output = np.zeros(shape=[self.no], dtype=np.float32)  # placeholder, can be used in backpropagation
-        self.last_nodes = np.zeros(shape=[self.no], dtype=np.float32)  # placeholder, can be used in backpropagation
+        self.last_input = np.zeros(shape=[self.ni], dtype=np.float32)
+        self.last_output = np.zeros(shape=[self.no], dtype=np.float32)
+        self.last_nodes = np.zeros(shape=[self.no], dtype=np.float32)
 
     def initializeWeights(self):
         """
@@ -161,7 +167,7 @@ class Layer:
                 z[i] += self.weights[j][i] * x[j]
             z[i] += self.biases[i]
         self.last_nodes = z
-        self.last_output = self.activation(z, False)
+        self.last_output = self.activation(z)
         return self.last_output
 
     def backprop(self, error):
@@ -182,7 +188,7 @@ class Layer:
         grad_weights = np.zeros(shape=[self.ni, self.no], dtype=np.float32)
         for i in range(0, self.no):
             for j in range(0, self.ni):
-                grad_weights[i][j] = \
+                grad_weights[j][i] = \
                     error[i] \
                     * self.activation(self.last_nodes[i], True) \
                     * self.last_input[j]
@@ -198,10 +204,9 @@ class Layer:
         errorSignal = np.zeros(shape=[self.ni], dtype=np.float32)
         for i in range(0, self.ni):
             for k in range(0, self.no):
-                errorSignal[k] += error[k] \
-                                  * self.activation(self.last_nodes, True) \
-                                  * self.weights[k][i]
-
+                errorSignal[i] += error[k] \
+                                  * self.activation(self.last_nodes[k], True) \
+                                  * self.weights[i][k]
         return errorSignal, grad_weights, grad_biases
 
 
@@ -218,10 +223,13 @@ class BasicNeuralNetwork():
         self.nhl = number_of_hiddenlayers
         self.constructNetwork()
 
+        self.mbs = None
+
     def forward(self, x):
         """
         Task 2b
-        This function forwards a single feature vector through every layer and return the output of the last layer
+        This function forwards a single feature vector through every layer and
+         return the output of the last layer
         :param x: input feature vector
         :return: output of the network
         :rtype: np.array
@@ -286,12 +294,11 @@ class BasicNeuralNetwork():
         :return: None
         """
         for (o, k) in dataset.get_all_obs_class():
-            error = self.forward(o)
-            error[k] = 1 - 2 * error[k]
-            for layer in self.layers.reverse():
-                (e, w, b) = layer.backprop(error)
+            error = square(self.forward(o) - k)
+            for layer in reversed(self.layers):
+                e, w, b = layer.backprop(error)
                 layer.weights -= self.lr * w
-                layer.weights -= self.lr * b
+                layer.biases -= self.lr * b
                 error = e
 
     def mini_batch_SGD(self, dataset):
@@ -313,11 +320,12 @@ class BasicNeuralNetwork():
         return batches
         """
         for (o, k) in dataset.get_mini_batches(self.mbs):
-            error = np.zeros(self.no)
+            error = np.zeros(shape=[self.no])
+            currError = np.zeros(shape=[self.no])
             for b in range(0, self.mbs):
-                error += self.forward(o[b])
-                error[k] += 1 - 2 * error[k]
-            for layer in self.layers:
+                error += square(self.forward(o[b]) - k[b])
+                #error[int(k[b])] += (1 - 2 * currError[int(k[b])])
+            for layer in reversed((self.layers)):
                 (e, w, b) = layer.backprop(error)
                 layer.weights -= self.lr * w
                 layer.weights -= self.lr * b
@@ -338,7 +346,6 @@ class BasicNeuralNetwork():
             self.layers.append(hidden_layer)
         output_layer = Layer(self.ls, self.no, softmax)
         self.layers.append(output_layer)
-        #print(len(self.layers)) --> 4
 
 
 
@@ -367,7 +374,7 @@ class BasicNeuralNetwork():
         if not path:
             path = './network.save'
         #with open(path, 'rb') as f:
-            #self.layers = pickle.load(f)
+         #   self.layers = pickle.load(f)
 
 
     def save(self, path=None):
