@@ -105,7 +105,10 @@ def sigmoid(x, deriv=False):
     if deriv:
         return sigmoid(x, False) * (1 - sigmoid(x, False))
     else:
-        return 0.5 * (1 + tanh(0.5 * x))
+       # if type(x) == 'float32':
+        #    return [0.5 * (1 + tanh(0.5 * i)) for i in x]
+        #else:
+            return 0.5 * (1 + tanh(0.5 * x))
 
 
 def softmax(x, deriv=False):
@@ -184,6 +187,7 @@ class Layer:
         :return: gradients for the bias
         :rtype: np.array
         """
+        print(error)
         #Gradient for weights
         grad_weights = np.zeros(shape=[self.ni, self.no], dtype=np.float32)
         for i in range(0, self.no):
@@ -207,12 +211,12 @@ class Layer:
                 errorSignal[i] += error[k] \
                                   * self.activation(self.last_nodes[k], True) \
                                   * self.weights[i][k]
-        return errorSignal, grad_weights, grad_biases
+        return (errorSignal, grad_weights, grad_biases)
 
 
 class BasicNeuralNetwork():
     def __init__(self, layer_sizes=5, num_input=4, num_output=3, num_epoch=50, learning_rate=0.1,
-                 mini_batch_size=8, number_of_hiddenlayers=2):
+                 mini_batch_size=8, number_of_hiddenlayers=1):
         self.layers = []
         self.ls = layer_sizes
         self.ni = num_input
@@ -295,10 +299,14 @@ class BasicNeuralNetwork():
         """
         for (o, k) in dataset.get_all_obs_class():
             error = square(self.forward(o) - k)
+            #print(o)
+            #print(error)
+            #print(k)
             for layer in reversed(self.layers):
-                e, w, b = layer.backprop(error)
+                (e, w, b) = layer.backprop(error)
                 layer.weights -= self.lr * w
                 layer.biases -= self.lr * b
+                error = None
                 error = e
 
     def mini_batch_SGD(self, dataset):
@@ -321,7 +329,6 @@ class BasicNeuralNetwork():
         """
         for (o, k) in dataset.get_mini_batches(self.mbs):
             error = np.zeros(shape=[self.no])
-            currError = np.zeros(shape=[self.no])
             for b in range(0, self.mbs):
                 error += square(self.forward(o[b]) - k[b])
                 #error[int(k[b])] += (1 - 2 * currError[int(k[b])])
@@ -373,8 +380,8 @@ class BasicNeuralNetwork():
     def load(self, path=None):
         if not path:
             path = './network.save'
-        #with open(path, 'rb') as f:
-         #   self.layers = pickle.load(f)
+        with open(path, 'rb') as f:
+            self.layers = pickle.load(f)
 
 
     def save(self, path=None):

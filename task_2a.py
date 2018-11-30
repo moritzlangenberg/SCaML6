@@ -10,8 +10,7 @@ trainDataset = IrisDataset(trainDataPath)
 
 net = BasicNeuralNetwork()
 
-net.train(trainDataset, eval_dataset=testDataset)
-#print(len(net.layers))
+net.train(train_dataset=trainDataset, eval_dataset=testDataset)
 net.load('./task_2a.save')
 acc = net.accuracy(testDataset)
 
