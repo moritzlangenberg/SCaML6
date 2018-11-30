@@ -5,6 +5,7 @@ testDataPath = "irisTestData.txt"
 testDataset = IrisDataset(testDataPath)
 
 net = BasicNeuralNetwork()
+#print(len(net.layers))
 net.load('./task_2a.save')
 acc = net.accuracy(testDataset)
 

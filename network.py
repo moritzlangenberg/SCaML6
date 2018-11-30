@@ -88,8 +88,10 @@ def tanh(x, deriv=False):
 def sigmoid(x, deriv=False):
     '''
     Task 2a
-    This function is the sigmoid function. It gets an input digit or vector and should return sigmoid(x).
-    The parameter "deriv" toggles between the sigmoid and the derivate of the sigmoid. Hint: In the case of the derivate
+    This function is the sigmoid function.
+    It gets an input digit or vector and should return sigmoid(x).
+    The parameter "deriv" toggles between the sigmoid and the derivate of the sigmoid.
+     Hint: In the case of the derivate
     you can expect the input to be sigmoid(x) instead of x
     :param x:
     :param deriv:
@@ -98,8 +100,7 @@ def sigmoid(x, deriv=False):
     if deriv:
         return sigmoid(x, False) * (1 - sigmoid(x, False))
     else:
-        return 0.5 * (1 + tanh(0.5 * x))
-    pass
+        return 0.5 * (1 + np.tanh(0.5 * x))
 
 
 def softmax(x, deriv=False):
@@ -116,8 +117,7 @@ def softmax(x, deriv=False):
     else:
         exps = [np.exp(i) for i in x]
         sumOfExps = np.sum(exps)
-        return [np.divide(i, sumOfExps) for i in exps]
-    pass
+        return np.array([np.divide(i, sumOfExps) for i in exps])
 
 
 class Layer:
@@ -130,8 +130,8 @@ class Layer:
         self.initializeWeights()
 
         self.activation = activation
-        self.last_input = None	# placeholder, can be used in backpropagation
-        self.last_output = None # placeholder, can be used in backpropagation
+        self.last_input = np.zeros(shape=[self.ni], dtype=np.float32)  # placeholder, can be used in backpropagation
+        self.last_output = np.zeros(shape=[self.no], dtype=np.float32)  # placeholder, can be used in backpropagation
         self.last_nodes = np.zeros(shape=[self.no], dtype=np.float32)  # placeholder, can be used in backpropagation
 
     def initializeWeights(self):
@@ -144,7 +144,6 @@ class Layer:
         """
         self.weights = np.random.rand(self.ni, self.no)
         self.biases = np.random.rand(self.no)
-        pass
 
     def inference(self, x):
         """
@@ -164,7 +163,6 @@ class Layer:
         self.last_nodes = z
         self.last_output = self.activation(z, False)
         return self.last_output
-        pass
 
     def backprop(self, error):
         """
@@ -209,7 +207,7 @@ class Layer:
 
 class BasicNeuralNetwork():
     def __init__(self, layer_sizes=5, num_input=4, num_output=3, num_epoch=50, learning_rate=0.1,
-                 mini_batch_size=8, number_of_hiddenlayers=4):
+                 mini_batch_size=8, number_of_hiddenlayers=2):
         self.layers = []
         self.ls = layer_sizes
         self.ni = num_input
@@ -218,7 +216,6 @@ class BasicNeuralNetwork():
         self.num_epoch = num_epoch
         self.mbs = mini_batch_size
         self.nhl = number_of_hiddenlayers
-
         self.constructNetwork()
 
     def forward(self, x):
@@ -229,10 +226,12 @@ class BasicNeuralNetwork():
         :return: output of the network
         :rtype: np.array
         """
+        #self.constructNetwork()
         #y = np.zeros(shape=self.ls) --> accuracy = 33,3%
         y = self.layers[0].inference(x)
         for layerIterator in range(1, len(self.layers)):
             y = self.layers[layerIterator].inference(y)
+            #print(str(y))
         return y
 
     def train(self, train_dataset, eval_dataset=None, monitor_ce_train=True, monitor_accuracy_train=True,
@@ -289,12 +288,11 @@ class BasicNeuralNetwork():
         for (o, k) in dataset.get_all_obs_class():
             error = self.forward(o)
             error[k] = 1 - 2 * error[k]
-            for layer in self.layers:
+            for layer in self.layers.reverse():
                 (e, w, b) = layer.backprop(error)
                 layer.weights -= self.lr * w
                 layer.weights -= self.lr * b
                 error = e
-        pass
 
     def mini_batch_SGD(self, dataset):
         """
@@ -324,7 +322,6 @@ class BasicNeuralNetwork():
                 layer.weights -= self.lr * w
                 layer.weights -= self.lr * b
                 error = e
-        pass
 
     def constructNetwork(self):
         """
@@ -334,17 +331,16 @@ class BasicNeuralNetwork():
         any preceeding layers should use sigmoid.
         :return: None
         """
-
         input_layer = Layer(self.ni, self.ls, sigmoid)
-        self.layers.append(input_layer)
+        self.layers = [input_layer]
         for i in range(0, self.nhl):
-            self.layers.append(Layer(self.ls, self.ls, sigmoid))
+            hidden_layer = Layer(self.ls, self.ls, sigmoid)
+            self.layers.append(hidden_layer)
         output_layer = Layer(self.ls, self.no, softmax)
         self.layers.append(output_layer)
+        #print(len(self.layers)) --> 4
 
-        for layer in self.layers:
-            layer.initializeWeights()
-        pass
+
 
     def ce(self, dataset):
         ce = 0
@@ -353,6 +349,7 @@ class BasicNeuralNetwork():
             ce += np.sum(np.nan_to_num(-t * np.log(t_hat) - (1 - t) * np.log(1 - t_hat)))
 
         return ce / dataset.num_obs
+
 
     def accuracy(self, dataset):
         cm = np.zeros(shape=[dataset.num_classes, dataset.num_classes], dtype=np.int)
@@ -365,11 +362,13 @@ class BasicNeuralNetwork():
         correct = np.trace(cm)
         return correct / dataset.num_obs
 
+
     def load(self, path=None):
         if not path:
             path = './network.save'
-        with open(path, 'rb') as f:
-            self.layers = pickle.load(f)
+        #with open(path, 'rb') as f:
+            #self.layers = pickle.load(f)
+
 
     def save(self, path=None):
         if not path:
