@@ -105,9 +105,9 @@ def sigmoid(x, deriv=False):
     if deriv:
         return sigmoid(x, False) * (1 - sigmoid(x, False))
     else:
-       # if type(x) == 'float32':
-        #    return [0.5 * (1 + tanh(0.5 * i)) for i in x]
-        #else:
+        if type(x) == 'float32':
+            return [0.5 * (1 + tanh(0.5 * i)) for i in x]
+        else:
             return 0.5 * (1 + tanh(0.5 * x))
 
 
@@ -187,23 +187,19 @@ class Layer:
         :return: gradients for the bias
         :rtype: np.array
         """
-        print(error)
         #Gradient for weights
         grad_weights = np.zeros(shape=[self.ni, self.no], dtype=np.float32)
         for i in range(0, self.no):
             for j in range(0, self.ni):
-                grad_weights[j][i] = \
-                    error[i] \
-                    * self.activation(self.last_nodes[i], True) \
-                    * self.last_input[j]
+                grad_weights[j][i] = error[i] \
+                                     * self.activation(self.last_nodes[i], True) \
+                                     * self.last_input[j]
 
         #Gradient for biases
         grad_biases = np.zeros(shape=[self.no], dtype=np.float32)
         for i in range(0, self.no):
-            grad_biases[i] = \
-                error[i] \
-                * self.activation(self.last_nodes[i], True) \
-                * 1
+            grad_biases[i] = error[i] \
+                             * self.activation(self.last_nodes[i], True)
         #Error signal for prev Layer E/y(l-1)
         errorSignal = np.zeros(shape=[self.ni], dtype=np.float32)
         for i in range(0, self.ni):
@@ -298,14 +294,18 @@ class BasicNeuralNetwork():
         :return: None
         """
         for (o, k) in dataset.get_all_obs_class():
-            error = square(self.forward(o) - k)
-            #print(o)
+            temp = self.forward(o)
+            error = np.absolute(temp - k)
+            #print(k)
+            #print(temp)
+            #print(temp-k)
             #print(error)
+            print(error)
             #print(k)
             for layer in reversed(self.layers):
                 (e, w, b) = layer.backprop(error)
-                layer.weights -= self.lr * w
-                layer.biases -= self.lr * b
+                layer.weights = layer.weights - self.lr * w
+                layer.biases = layer.biases - self.lr * b
                 error = None
                 error = e
 
