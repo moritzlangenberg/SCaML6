@@ -105,10 +105,10 @@ def sigmoid(x, deriv=False):
     if deriv:
         return sigmoid(x, False) * (1 - sigmoid(x, False))
     else:
-        if type(x) == 'float32':
-            return [0.5 * (1 + tanh(0.5 * i)) for i in x]
-        else:
-            return 0.5 * (1 + tanh(0.5 * x))
+        #if type(x) != 'float32':
+         #   return [0.5 * (1 + tanh(0.5 * i)) for i in x]
+        #else:
+        return 0.5 * (1 + tanh(0.5 * x))
 
 
 def softmax(x, deriv=False):
@@ -153,6 +153,7 @@ class Layer:
         """
         self.weights = np.random.rand(self.ni, self.no)
         self.biases = np.random.rand(self.no)
+
 
     def inference(self, x):
         """
@@ -211,8 +212,8 @@ class Layer:
 
 
 class BasicNeuralNetwork():
-    def __init__(self, layer_sizes=5, num_input=4, num_output=3, num_epoch=50, learning_rate=0.1,
-                 mini_batch_size=8, number_of_hiddenlayers=1):
+    def __init__(self, layer_sizes=5, num_input=4, num_output=3, num_epoch=100, learning_rate=0.1,
+                 mini_batch_size=8, number_of_hiddenlayers=0):
         self.layers = []
         self.ls = layer_sizes
         self.ni = num_input
@@ -234,8 +235,6 @@ class BasicNeuralNetwork():
         :return: output of the network
         :rtype: np.array
         """
-        #self.constructNetwork()
-        #y = np.zeros(shape=self.ls) --> accuracy = 33,3%
         y = self.layers[0].inference(x)
         for layerIterator in range(1, len(self.layers)):
             y = self.layers[layerIterator].inference(y)
@@ -293,20 +292,13 @@ class BasicNeuralNetwork():
         :param dataset:
         :return: None
         """
-        for (o, k) in dataset.get_all_obs_class():
+        for o, k in dataset:
             temp = self.forward(o)
-            error = np.absolute(temp - k)
-            #print(k)
-            #print(temp)
-            #print(temp-k)
-            #print(error)
-            print(error)
-            #print(k)
+            error = (temp - k)
             for layer in reversed(self.layers):
                 (e, w, b) = layer.backprop(error)
                 layer.weights = layer.weights - self.lr * w
                 layer.biases = layer.biases - self.lr * b
-                error = None
                 error = e
 
     def mini_batch_SGD(self, dataset):
@@ -317,22 +309,11 @@ class BasicNeuralNetwork():
         :param dataset:
         :return: None
         """
-        """
-            def get_mini_batches(self, batch_size, shuffle=False):
-        if shuffle:
-            random.shuffle(self.indices)
-
-        batches = [(self.obs[self.indices[n:n + batch_size]],
-                    self.classes[self.indices[n:n + batch_size]])
-                   for n in range(0, self.num_obs, batch_size)]
-        return batches
-        """
         for (o, k) in dataset.get_mini_batches(self.mbs):
             error = np.zeros(shape=[self.no])
             for b in range(0, self.mbs):
-                error += square(self.forward(o[b]) - k[b])
-                #error[int(k[b])] += (1 - 2 * currError[int(k[b])])
-            for layer in reversed((self.layers)):
+                error += np.absolute(self.forward(o[b]) - k[b])
+            for layer in reversed(self.layers):
                 (e, w, b) = layer.backprop(error)
                 layer.weights -= self.lr * w
                 layer.weights -= self.lr * b
