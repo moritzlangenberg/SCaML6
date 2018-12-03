@@ -76,7 +76,7 @@ def square(list):
 
 
 # Activations
-def tanh(x, deriv=False):
+def tanh(x, deriv):
     '''
 	d/dx tanh(x) = 1 - tanh^2(x)
 	during backpropagation when we need to go though
@@ -84,13 +84,13 @@ def tanh(x, deriv=False):
 	therefore we pass tanh(x) to the function which reduces the gradient to:
 	1 - tanh(x)
     '''
-    if deriv:
+    if deriv == True:
         return 1.0 - np.power(np.tanh(x), 2)
     else:
         return np.tanh(x)
 
 
-def sigmoid(x, deriv=False):
+def sigmoid(x, deriv):
     '''
     Task 2a
     This function is the sigmoid function.
@@ -102,16 +102,21 @@ def sigmoid(x, deriv=False):
     :param deriv:
     :return:
     '''
-    if deriv:
+    if deriv == True:
+        #return 0.5 * (1 + tanh(0.5 * x, False))
+        #return (1 / (1 + np.exp(-x)))
         return sigmoid(x, False) * (1 - sigmoid(x, False))
+        #return x*(1-x)
     else:
         #if type(x) != 'float32':
          #   return [0.5 * (1 + tanh(0.5 * i)) for i in x]
         #else:
-        return 0.5 * (1 + tanh(0.5 * x))
+        #return sigmoid(x, False) * (1 - sigmoid(x, False))
+        return 0.5 * (1 + tanh(0.5 * x, False))
+        #return (1 / (1 + np.exp(-x)))
 
 
-def softmax(x, deriv=False):
+def softmax(x, deriv):
     '''
     Task 2a
     This function is the sigmoid function with a softmax applied.
@@ -151,9 +156,12 @@ class Layer:
         You can search the literature for possible initialization methods.
         :return: None
         """
-        self.weights = np.random.rand(self.ni, self.no)
-        self.biases = np.random.rand(self.no)
-
+        #####RANDOM
+        #self.weights = np.random.rand(self.weights.shape[0], self.weights.shape[1])
+        #self.biases = np.random.rand(self.biases.shape[0])
+        #####NORMAL
+        self.weights = np.random.normal(0, np.sqrt(2/(self.ni * self.no)), (self.weights.shape[0], self.weights.shape[1]))
+        self.biases = np.random.normal(0, np.sqrt(2/(self.ni * self.no)), self.biases.shape[0])
 
     def inference(self, x):
         """
@@ -171,7 +179,7 @@ class Layer:
                 z[i] += self.weights[j][i] * x[j]
             z[i] += self.biases[i]
         self.last_nodes = z
-        self.last_output = self.activation(z)
+        self.last_output = self.activation(z, False)
         return self.last_output
 
     def backprop(self, error):
@@ -208,12 +216,12 @@ class Layer:
                 errorSignal[i] += error[k] \
                                   * self.activation(self.last_nodes[k], True) \
                                   * self.weights[i][k]
-        return (errorSignal, grad_weights, grad_biases)
+        return errorSignal, grad_weights, grad_biases
 
 
 class BasicNeuralNetwork():
-    def __init__(self, layer_sizes=5, num_input=4, num_output=3, num_epoch=100, learning_rate=0.1,
-                 mini_batch_size=8, number_of_hiddenlayers=0):
+    def __init__(self, layer_sizes=5, num_input=4, num_output=3, num_epoch=300, learning_rate=0.1,
+                 mini_batch_size=4, number_of_hiddenlayers=0):
         self.layers = []
         self.ls = layer_sizes
         self.ni = num_input
@@ -223,8 +231,6 @@ class BasicNeuralNetwork():
         self.mbs = mini_batch_size
         self.nhl = number_of_hiddenlayers
         self.constructNetwork()
-
-        self.mbs = None
 
     def forward(self, x):
         """
@@ -238,7 +244,6 @@ class BasicNeuralNetwork():
         y = self.layers[0].inference(x)
         for layerIterator in range(1, len(self.layers)):
             y = self.layers[layerIterator].inference(y)
-            #print(str(y))
         return y
 
     def train(self, train_dataset, eval_dataset=None, monitor_ce_train=True, monitor_accuracy_train=True,
@@ -301,6 +306,7 @@ class BasicNeuralNetwork():
                 layer.biases = layer.biases - self.lr * b
                 error = e
 
+
     def mini_batch_SGD(self, dataset):
         """
         Task 2d
@@ -309,14 +315,14 @@ class BasicNeuralNetwork():
         :param dataset:
         :return: None
         """
-        for (o, k) in dataset.get_mini_batches(self.mbs):
+        for o, k in dataset.get_mini_batches(self.mbs):
             error = np.zeros(shape=[self.no])
             for b in range(0, self.mbs):
-                error += np.absolute(self.forward(o[b]) - k[b])
+                error += (self.forward(o[b]) - k[b])
             for layer in reversed(self.layers):
                 (e, w, b) = layer.backprop(error)
-                layer.weights -= self.lr * w
-                layer.weights -= self.lr * b
+                layer.weights = layer.weights - self.lr * w
+                layer.biases = layer.biases - self.lr * b
                 error = e
 
     def constructNetwork(self):
