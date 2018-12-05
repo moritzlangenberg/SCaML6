@@ -148,6 +148,8 @@ class Layer:
         self.last_output = np.zeros(shape=[self.no], dtype=np.float32)
         self.last_nodes = np.zeros(shape=[self.no], dtype=np.float32)
 
+        self.mbs = None
+
     def initializeWeights(self):
         """
         Task 2d
@@ -299,7 +301,10 @@ class BasicNeuralNetwork():
         """
         for o, k in dataset:
             temp = self.forward(o)
-            error = (temp - k)
+            #############SQUARED ERROR##############
+            #error = (temp - k)
+            ############ CROSS ENTROPY ERROR#############
+            k*np.log(temp) + (1-k)*np.log(1-temp)
             for layer in reversed(self.layers):
                 (e, w, b) = layer.backprop(error)
                 layer.weights = layer.weights - self.lr * w
